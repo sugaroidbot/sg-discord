@@ -133,7 +133,7 @@ func onMessageReceiveHandler(s *discordgo.Session, m *discordgo.MessageCreate, p
 
 	logger.Infof("[#%s][%s] %s", m.ChannelID, m.Author.ID, m.Content)
 
-	err := sgapi.Send(v, strings.TrimSpace(strings.TrimPrefix(m.Content, prefix)))
+	err := sgapi.Send(v, strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(m.Content, prefix), "!S ")))
 	if err != nil {
 		logger.Warn(err)
 		chanMap[m.ChannelID] = nil
