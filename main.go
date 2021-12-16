@@ -17,6 +17,7 @@ import (
 var logger = log.New(os.Stdout)
 
 var chanMap = map[string]*sgapi.WsConn{}
+
 const discordMessageLimit = 1750
 
 func main() {
@@ -55,7 +56,7 @@ func main() {
 
 func sendMessageAsChunks(s *discordgo.Session, message string, chanId string) {
 	if len(message) > discordMessageLimit {
-		_, err := s.ChannelMessageSend(chanId, message[:discordMessageLimit] + "...")
+		_, err := s.ChannelMessageSend(chanId, message[:discordMessageLimit]+"...")
 		if err != nil {
 			logger.Warn(err)
 		}
@@ -69,8 +70,6 @@ func sendMessageAsChunks(s *discordgo.Session, message string, chanId string) {
 
 }
 
-
-
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the authenticated bot has access to.
 func onMessageReceiveHandler(s *discordgo.Session, m *discordgo.MessageCreate, prefix string, wsEndpoint string) {
@@ -81,7 +80,7 @@ func onMessageReceiveHandler(s *discordgo.Session, m *discordgo.MessageCreate, p
 		return
 	}
 	fmt.Println(m.Content, prefix)
-	if !strings.HasPrefix(m.Content, prefix) {
+	if !strings.HasPrefix(m.Content, prefix) && !strings.HasPrefix(m.Content, "!S") {
 		return
 	}
 
@@ -111,18 +110,18 @@ func onMessageReceiveHandler(s *discordgo.Session, m *discordgo.MessageCreate, p
 				}
 				sendMessageAsChunks(s, resp, m.ChannelID)
 				/*
-				msg := tgbotapi.NewMessage(Chat.ID, resp)
+					msg := tgbotapi.NewMessage(Chat.ID, resp)
 
-				if strings.Contains(resp, "<sugaroid:yesno>") {
-					msg.Text = strings.Replace(resp, "<sugaroid:yesno>", "", -1)
-					msg.ReplyMarkup = keyboards["sugaroid:yesno"]
-				}
-				msg.ParseMode = tgbotapi.ModeHTML
+					if strings.Contains(resp, "<sugaroid:yesno>") {
+						msg.Text = strings.Replace(resp, "<sugaroid:yesno>", "", -1)
+						msg.ReplyMarkup = keyboards["sugaroid:yesno"]
+					}
+					msg.ParseMode = tgbotapi.ModeHTML
 
-				_, err := bot.Send(msg)
-				if err != nil {
-					logger.Warn(err)
-				}*/
+					_, err := bot.Send(msg)
+					if err != nil {
+						logger.Warn(err)
+					}*/
 			})
 			if err != nil {
 				logger.Warn(err)
