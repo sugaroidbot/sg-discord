@@ -33,7 +33,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	prefix := fmt.Sprintf("<@!%s>", userId.ID)
+	prefix := userId.ID
 
 	dg.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		onMessageReceiveHandler(s, m, prefix, wsEndpoint)
@@ -54,18 +54,18 @@ func main() {
 	dg.Close()
 }
 
-func sendMessageAsChunks(s *discordgo.Session, message string, chanId string) {
+func sendMessageAsChunks(s *discordgo.Session, message string, m *discordgo.MessageCreate) {
 	if len(message) > discordMessageLimit {
-		_, err := s.ChannelMessageSend(chanId, message[:discordMessageLimit]+"...")
+		_, err := s.ChannelMessageSend(m.ChannelID, message[:discordMessageLimit]+"...")
 		if err != nil {
 			logger.Warn(err)
 		}
 		message = message[discordMessageLimit:]
 		if len(message) > 0 {
-			sendMessageAsChunks(s, message, chanId)
+			sendMessageAsChunks(s, message, m)
 		}
 	} else {
-		s.ChannelMessageSend(chanId, message)
+		s.ChannelMessageSendReply(m.ChannelID, message, m.Reference())
 	}
 
 }
@@ -79,8 +79,11 @@ func onMessageReceiveHandler(s *discordgo.Session, m *discordgo.MessageCreate, p
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	fmt.Println(m.Content, prefix)
-	if !strings.HasPrefix(m.Content, prefix) && !strings.HasPrefix(m.Content, "!S") {
+	prefix1 := fmt.Sprintf("<@!%s>", prefix)
+	prefix2 := fmt.Sprintf("<@%s>", prefix)
+	logger.Debugf("[#%s][%s]: %s", m.ChannelID, m.Author.Username, m.Content)
+
+	if !strings.HasPrefix(m.Content, prefix1) && !strings.HasPrefix(m.Content, prefix2) && !strings.HasPrefix(m.Content, "!S") {
 		return
 	}
 
@@ -96,6 +99,7 @@ func onMessageReceiveHandler(s *discordgo.Session, m *discordgo.MessageCreate, p
 		}
 		wsCon, err := sgapi.New(sgapi.Instance{Endpoint: fmt.Sprintf("%s://%s", scheme, wsEndpoint)}, uid)
 		if err != nil {
+			s.ChannelMessageSendReply(m.ChannelID, "Hmm. I had some trouble connecting to my brain 🧠... I maybe asleep now 😴, sorry.", m.Reference())
 			logger.Warn(err)
 			return
 		}
@@ -108,7 +112,7 @@ func onMessageReceiveHandler(s *discordgo.Session, m *discordgo.MessageCreate, p
 					// skip empty responses
 					return
 				}
-				sendMessageAsChunks(s, resp, m.ChannelID)
+				sendMessageAsChunks(s, resp, m)
 				/*
 					msg := tgbotapi.NewMessage(Chat.ID, resp)
 
@@ -131,9 +135,9 @@ func onMessageReceiveHandler(s *discordgo.Session, m *discordgo.MessageCreate, p
 		}()
 	}
 
-	logger.Infof("[#%s][%s] %s", m.ChannelID, m.Author.ID, m.Content)
+	logger.Infof("[#%s][%s]: %s", m.ChannelID, m.Author.Username, m.Content)
 
-	err := sgapi.Send(v, strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(m.Content, prefix), "!S ")))
+	err := sgapi.Send(v, strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(m.Content, prefix1), prefix2), "!S ")))
 	if err != nil {
 		logger.Warn(err)
 		chanMap[m.ChannelID] = nil
