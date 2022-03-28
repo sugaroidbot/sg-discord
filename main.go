@@ -65,7 +65,7 @@ func sendMessageAsChunks(s *discordgo.Session, message string, m *discordgo.Mess
 			sendMessageAsChunks(s, message, m)
 		}
 	} else {
-		s.ChannelMessageSendReply(m.ChannelID, message, m.Reference())
+		s.ChannelMessageSend(m.ChannelID, message)
 	}
 
 }
@@ -99,8 +99,8 @@ func onMessageReceiveHandler(s *discordgo.Session, m *discordgo.MessageCreate, p
 		}
 		wsCon, err := sgapi.New(sgapi.Instance{Endpoint: fmt.Sprintf("%s://%s", scheme, wsEndpoint)}, uid)
 		if err != nil {
-			s.ChannelMessageSendReply(m.ChannelID, "Hmm. I had some trouble connecting to my brain 🧠... I maybe asleep now 😴, sorry.", m.Reference())
-			logger.Warn(err)
+			s.ChannelMessageSend(m.ChannelID, "Hmm. I had some trouble connecting to my brain 🧠... I maybe asleep now 😴, sorry.")
+                        logger.Warn(err)
 			return
 		}
 		v = wsCon
